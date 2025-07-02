@@ -1,0 +1,5 @@
+benchmarks/CoMD/bin/CoMD_test
+benchmarks/CoMD/src-openmp/CoMD_info.h
+benchmarks/hpccg/HPCCG_test
+benchmarks/simplemoc/src/SimpleMOC_test
+benchmarks/XSBench/openmp-threading/XSBench_test
