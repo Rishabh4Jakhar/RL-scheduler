@@ -12,7 +12,7 @@ PYTHON_SCRIPT="../src/main.py"
 
 # Declare an array of combinations (pairs of keys to pass)
 combinations=("HP")                                       # Add benchmarks here
-ranges=("0,2,4,6,8,10,12,14,16,18,20")                    # Add thread affinities here; only physical cores
+ranges=("0,2,4,6,8,10,12,14,16,18")                    # Add thread affinities here; only physical cores
 
 ## For multiple benchmark testing at same time:
 # combinations=("Bench1" "Bench2")                                       
