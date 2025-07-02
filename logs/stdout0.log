@@ -1,0 +1,174 @@
+
+=== hijack =====   Thread id for thread 0 is 2398780
+
+pthread_create Hijacked 
+
+pthread_create Hijacked 
+
+Thread id of current thread 1 is: 2398781
+
+pthread_create Hijacked 
+
+Thread id of current thread 2 is: 2398782
+
+pthread_create Hijacked 
+
+Thread id of current thread 3 is: 2398783
+
+pthread_create Hijacked 
+
+Thread id of current thread 4 is: 2398784
+
+pthread_create Hijacked 
+
+Thread id of current thread 5 is: 2398785
+
+pthread_create Hijacked 
+
+Thread id of current thread 6 is: 2398786
+
+pthread_create Hijacked 
+
+Thread id of current thread 7 is: 2398787
+
+pthread_create Hijacked 
+
+Thread id of current thread 8 is: 2398788
+
+pthread_create Hijacked 
+
+Thread id of current thread 9 is: 2398789
+
+pthread_create Hijacked 
+
+Thread id of current thread 10 is: 2398790
+
+pthread_create Hijacked 
+
+Thread id of current thread 11 is: 2398791
+
+pthread_create Hijacked 
+
+Thread id of current thread 12 is: 2398792
+
+pthread_create Hijacked 
+
+Thread id of current thread 13 is: 2398793
+
+pthread_create Hijacked 
+
+Thread id of current thread 14 is: 2398794
+
+pthread_create Hijacked 
+
+Thread id of current thread 15 is: 2398795
+
+pthread_create Hijacked 
+
+Thread id of current thread 16 is: 2398796
+
+pthread_create Hijacked 
+
+Thread id of current thread 17 is: 2398797
+
+pthread_create Hijacked 
+
+Thread id of current thread 18 is: 2398798
+
+Thread id of current thread 19 is: 2398799
+
+-----
+mkdir timedrun fake
+
+Initial Residual = 7475.3
+Iteration = 50   Residual = 0.000895012
+Iteration = 100   Residual = 5.26331e-11
+Iteration = 150   Residual = 1.60736e-18
+Iteration = 200   Residual = 7.95788e-26
+Iteration = 250   Residual = 3.09375e-33
+Iteration = 300   Residual = 1.07473e-40
+Iteration = 350   Residual = 3.45312e-48
+Iteration = 400   Residual = 1.31584e-55
+Iteration = 450   Residual = 5.88158e-63
+Iteration = 500   Residual = 1.84466e-70
+Iteration = 550   Residual = 9.22643e-78
+Iteration = 600   Residual = 2.18433e-85
+Iteration = 650   Residual = 1.05718e-92
+Iteration = 700   Residual = 3.83806e-100
+Iteration = 750   Residual = 1.27738e-107
+Iteration = 800   Residual = 5.13131e-115
+Iteration = 850   Residual = 2.88649e-122
+Iteration = 900   Residual = 9.14076e-130
+Iteration = 950   Residual = 3.28073e-137
+Iteration = 999   Residual = 2.50569e-144
+Mini-Application Name: hpccg
+Mini-Application Version: 1.0
+Parallelism: 
+  MPI not enabled: 
+  Number of OpenMP threads: 20
+Dimensions: 
+  nx: 256
+  ny: 256
+  nz: 256
+Number of iterations: 999
+Final residual: 2.50569e-144
+#********** Performance Summary (times in sec) ***********: 
+Time Summary: 
+  Total   : 4373.94
+  DDOT    : 255.37
+  WAXPBY  : 737.796
+  SPARSEMV: 3379.94
+FLOPS Summary: 
+  Total   : 1.07267e+12
+  DDOT    : 6.70418e+10
+  WAXPBY  : 1.00563e+11
+  SPARSEMV: 9.05064e+11
+MFLOPS Summary: 
+  Total   : 245.241
+  DDOT    : 262.528
+  WAXPBY  : 136.301
+  SPARSEMV: 267.775
+
+============================ Tabulate Statistics ============================
+TIME
+226316.453934
+=============================================================================
+===== Test PASSED in 0.0 msec =====
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 
+
+pthread_join Hijacked 

@@ -1,0 +1,39 @@
+['HP']
+[('../benchmarks/hpccg/HPCCG_test', '0,2,4,6,8,10,12,14,16,18')]
+[[0, 20, 2, 22, 4, 24, 6, 26, 8, 28, 10, 30, 12, 32, 14, 34, 16, 36, 18, 38]]
+Attaching shared memory...
+Launching benchmarks...
+Tids collected successfully
+
+Thread 2398780 is pinned to CPU core 0
+Thread 2398781 is pinned to CPU core 20
+Thread 2398782 is pinned to CPU core 2
+Thread 2398783 is pinned to CPU core 22
+Thread 2398784 is pinned to CPU core 4
+Thread 2398785 is pinned to CPU core 24
+Thread 2398786 is pinned to CPU core 6
+Thread 2398787 is pinned to CPU core 26
+Thread 2398788 is pinned to CPU core 8
+Thread 2398789 is pinned to CPU core 28
+Thread 2398790 is pinned to CPU core 10
+Thread 2398791 is pinned to CPU core 30
+Thread 2398792 is pinned to CPU core 12
+Thread 2398793 is pinned to CPU core 32
+Thread 2398794 is pinned to CPU core 14
+Thread 2398795 is pinned to CPU core 34
+Thread 2398796 is pinned to CPU core 16
+Thread 2398797 is pinned to CPU core 36
+Thread 2398798 is pinned to CPU core 18
+Thread 2398799 is pinned to CPU core 38
+Threads pinned successfully
+Monitoring launched benchmarks...
+Benchmark PID 2398780 finished.
+Waiting for any remaining benchmarks to finish...
+-----
+mkdir timedrun fake
+
+============================ Tabulate Statistics ============================
+Instructions_0  Cycles_0  IPC_0  Hits_0  Misses_0  Time_0  Energy  Speedup
+3082181456292.0  11061967185666.0  0.27863  3727006622.0  981156679.0  226.69973  18190.00000  0.27863
+=============================================================================
+===== Total Time in 226.70500 sec =====
