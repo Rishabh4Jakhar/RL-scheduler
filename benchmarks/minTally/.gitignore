@@ -1,0 +1,10 @@
+# Compiled objects and modules
+*.o
+
+# emacs and vim backups
+*~
+*.swp
+
+# Build files
+bin/
+obj/

@@ -1,0 +1,10 @@
+In src/custom_input.in
+
+Changed portions:
+For LI region change the variable: decomp_assemblies_ax then, assembly_width
+For increasing time without changing LI: change cai and fai
+
+for increasing time: increase segments per track parameter. 
+on 72 cores: increasing the parameter by 120 increased the time by 5 seconds.
+
+increase cai only to reduce mem% seen from htop, i.e. make it more cache dependent.
