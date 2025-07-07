@@ -1,0 +1,2 @@
+#!/bin/bash
+perf stat -e duration_time,task-clock,context-switches,cpu-cycles -I 50 -a -x, -o logs/group_A.csv -- bash -c "timeout 3s numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 ./benchmarks/CoMD/bin/CoMD_test"
