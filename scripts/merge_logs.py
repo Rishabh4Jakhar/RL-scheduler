@@ -55,6 +55,6 @@ desired_order = ['time', 'duration_time', 'task-clock', 'context-switches', 'cpu
 
 final_df = final_df[desired_order]
 
-# Save to CSV
+#Save to CSV
 final_df.to_csv("./logs/merged_output.csv", index=False)
-print("✅ Merged file saved as merged_output.csv")
+#print("✅ Merged file saved as merged_output.csv")

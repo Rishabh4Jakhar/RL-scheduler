@@ -1,2 +1,2 @@
 #!/bin/bash
-perf stat -e L1-icache-load-misses,LLC-load-misses,dTLB-load-misses,iTLB-load-misses -I 50 -a -x, -o logs/group_C.csv -- bash -c "timeout 3s numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 ./benchmarks/CoMD/bin/CoMD_test"
+perf stat -e L1-icache-load-misses,LLC-load-misses,dTLB-load-misses,iTLB-load-misses -I 50 -a -x, -o logs/group_C.csv -- bash -c "timeout 1s numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 ./benchmarks/CoMD/bin/CoMD_test"
