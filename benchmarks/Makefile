@@ -14,8 +14,10 @@ XSBench := $(BENCHMARKS_ROOT)/XSBench/openmp-threading
 HPCCG := $(BENCHMARKS_ROOT)/hpccg
 MinTally := $(BENCHMARKS_ROOT)/minTally
 
+CoHMM := $(BENCHMARKS_ROOT)/CoHMM
+
 # Define the projects list with specific paths
-PROJECTS := $(CoMD) $(SimpleMOC) $(XSBench) $(HPCCG) $(MinTally)
+PROJECTS := $(CoHMM) $(CoMD) $(SimpleMOC) $(XSBench) $(HPCCG) $(MinTally)
 
 .PHONY: all clean $(PROJECTS)
 
@@ -38,6 +40,9 @@ $(MinTally):
 $(HPCCG):
 	$(MAKE) -C $(HPCCG) ADD_CFLAGS="$(ADD_CFLAGS)" ADD_LDFLAGS="$(ADD_LDFLAGS)" ADD_LDLIBS="$(ADD_LDLIBS)" BINARY_SUFFIX="$(BINARY_SUFFIX)"
 
+$(CoHMM):
+	$(MAKE) -C $(CoHMM) ADD_CFLAGS="$(ADD_CFLAGS)" ADD_LDFLAGS="$(ADD_LDFLAGS)" ADD_LDLIBS="$(ADD_LDLIBS)" BINARY_SUFFIX="$(BINARY_SUFFIX)"
+
 # Clean all projects
 clean:
 	$(MAKE) -C $(CoMD) clean BINARY_SUFFIX="$(BINARY_SUFFIX)"
@@ -45,4 +50,5 @@ clean:
 	$(MAKE) -C $(MinTally) clean BINARY_SUFFIX="$(BINARY_SUFFIX)"
 	$(MAKE) -C $(XSBench) clean BINARY_SUFFIX="$(BINARY_SUFFIX)"
 	$(MAKE) -C $(HPCCG) clean BINARY_SUFFIX="$(BINARY_SUFFIX)"
+	$(MAKE) -C $(CoHMM) clean BINARY_SUFFIX="$(BINARY_SUFFIX)"
 
