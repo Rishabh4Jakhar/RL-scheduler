@@ -42,7 +42,7 @@ merged_rows = []
 for i in range(min_len):
     row = {
         'time': float(chunks_A[i].loc[0, 'time']),
-        'benchmark': "CoMD",
+        'benchmark': f"{benchmark}",
         'socket': 0,
         'core_list': "0,2,4,6,8,10,12,14,16,18"
     }
