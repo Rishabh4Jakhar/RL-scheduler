@@ -1,11 +1,19 @@
 import pandas as pd
+import sys 
+
+if len(sys.argv) != 2:
+    print("Usage: merge_logs.py <benchmark_name>")
+    sys.exit(1)
+
+benchmark = sys.argv[1]
+log_path = f"./logs/{benchmark}"
 
 # Replace with your actual paths
-group_A = pd.read_csv("./logs/group_A.csv", comment='#', header=None,
+group_A = pd.read_csv(f"{log_path}/group_A.csv", comment='#', header=None,
                       names=['time', 'value', 'unit', 'event', 'raw', 'percent', 'rate', 'extra'])
-group_B = pd.read_csv("./logs/group_B.csv", comment='#', header=None,
+group_B = pd.read_csv(f"{log_path}/group_B.csv", comment='#', header=None,
                       names=['time', 'value', 'unit', 'event', 'raw', 'percent', 'rate', 'extra'])
-group_C = pd.read_csv("./logs/group_C.csv", comment='#', header=None,
+group_C = pd.read_csv(f"{log_path}/group_C.csv", comment='#', header=None,
                       names=['time', 'value', 'unit', 'event', 'raw', 'percent', 'rate', 'extra'])
 
 
@@ -56,5 +64,5 @@ desired_order = ['time', 'duration_time', 'task-clock', 'context-switches', 'cpu
 final_df = final_df[desired_order]
 
 #Save to CSV
-final_df.to_csv("./logs/merged_output.csv", index=False)
+final_df.to_csv(f"{log_path}/{benchmark}_dataset.csv", index=False)
 #print("✅ Merged file saved as merged_output.csv")
