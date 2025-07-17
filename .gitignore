@@ -18,3 +18,8 @@ logs/simplemoc/group_C.csv
 logs/XSBench/group_A.csv
 logs/XSBench/group_B.csv
 logs/XSBench/group_C.csv
+benchmarks/CoMD/bin/CoMD_test
+benchmarks/CoMD/src-openmp/CoMD_info.h
+benchmarks/hpccg/HPCCG_test
+benchmarks/simplemoc/src/SimpleMOC_test
+benchmarks/XSBench/openmp-threading/XSBench_test
