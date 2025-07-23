@@ -2,7 +2,7 @@ import pandas as pd
 from env import SchedulingEnv
 from stable_baselines3 import PPO
 
-df = pd.read_csv("data/amg.csv")
+df = pd.read_csv("profiler/profiler/logs/AMG/AMG_dataset.csv")
 env = SchedulingEnv(df)
 
 model = PPO.load("ppo_scheduler")
