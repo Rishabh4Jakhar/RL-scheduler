@@ -4,7 +4,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 
 # Load and prepare dataset
-df = pd.read_csv("data/amg.csv")  # Replace with your merged CSV path
+df = pd.read_csv("/home/rishabh2025/profiler/logs/AMG/AMG_dataset.csv")  # Replace with your merged CSV path
 
 env = SchedulingEnv(df)
 check_env(env, warn=True)
