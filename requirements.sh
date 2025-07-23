@@ -15,4 +15,4 @@ PIP_CMD=$(command -v pip3 || command -v pip)
 echo "Using pip command: $PIP_CMD"
 
 # Install required packages
-$PIP_CMD install posix_ipc psutil scipy pyDOE
+$PIP_CMD install posix_ipc psutil scipy pyDOE gym
