@@ -1,6 +1,6 @@
-import gym
+import gymnasium as gym
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 
 class SchedulingEnv(gym.Env):
     def __init__(self, data_df):
