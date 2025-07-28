@@ -1,11 +1,12 @@
 import pandas as pd
 import sys 
 
-if len(sys.argv) != 2:
-    print("Usage: merge_logs.py <benchmark_name>")
+if len(sys.argv) != 3:
+    print("Usage: merge_logs.py <benchmark_name> <solo_time>")
     sys.exit(1)
 
 benchmark = sys.argv[1]
+solo_time = float(sys.argv[2])
 log_path = f"./logs/{benchmark}"
 
 # Replace with your actual paths
@@ -41,6 +42,8 @@ merged_rows = []
 
 for i in range(min_len):
     row = {
+        # Solo time
+        'solo_time': solo_time,
         'time': float(chunks_A[i].loc[0, 'time']),
         'benchmark': f"{benchmark}",
         'socket': 0,
@@ -56,7 +59,7 @@ for i in range(min_len):
 final_df = pd.DataFrame(merged_rows)
 
 # Reorder columns (optional)
-desired_order = ['time', 'duration_time', 'task-clock', 'context-switches', 'cpu-cycles',
+desired_order = ['solo_time', 'time', 'duration_time', 'task-clock', 'context-switches', 'cpu-cycles',
                  'instructions', 'page-faults', 'branch-misses', 'L1-dcache-load-misses',
                  'LLC-load-misses', 'L1-icache-load-misses', 'dTLB-load-misses', 'iTLB-load-misses',
                  'benchmark', 'socket', 'core_list']
