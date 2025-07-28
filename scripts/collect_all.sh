@@ -20,7 +20,7 @@ echo "==============================="
 
 for BENCH in "${BENCHMARKS[@]}"; do
   echo -e "\n🔧 Profiling benchmark: $BENCH"
-  ./collect_dataset.sh $BENCH
+  ./scripts/collect_dataset.sh $BENCH
 done
 
 echo -e "\n✅ All 10 benchmarks profiled and datasets saved under logs/<BENCH>/"
