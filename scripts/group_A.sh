@@ -34,4 +34,4 @@ else
 fi
 
 # Final execution
-perf stat -e duration_time,task-clock,context-switches,cpu-cycles -I 50 -a -x, -o logs/$BENCHMARK/group_A.csv -- bash -c "cd $cd_target && timeout 1s numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 $binary_rel_path $BENCH_ARGS"
+perf stat -e duration_time,task-clock,context-switches,cpu-cycles -I 50 -a -x, -o logs/$BENCHMARK/group_A.csv -- bash -c "cd $cd_target && numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 $binary_rel_path $BENCH_ARGS"

@@ -32,4 +32,4 @@ else
 fi
 
 # Group B counter
-perf stat -e instructions,page-faults,branch-misses,L1-dcache-load-misses -I 50 -a -x, -o logs/$BENCHMARK/group_B.csv -- bash -c "cd $cd_target && timeout 1s numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 $binary_rel_path $BENCH_ARGS"
+perf stat -e instructions,page-faults,branch-misses,L1-dcache-load-misses -I 50 -a -x, -o logs/$BENCHMARK/group_B.csv -- bash -c "cd $cd_target && numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 $binary_rel_path $BENCH_ARGS"
