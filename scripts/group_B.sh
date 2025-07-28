@@ -1,16 +1,37 @@
 #!/bin/bash
-
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$SCRIPT_DIR/.."
 BENCHMARK=$1
 shift
 BENCH_ARGS="$@"
 
 mkdir -p logs/$BENCHMARK
 
-# Find the binary
-BIN_FILE=$(find ./benchmarks/$BENCHMARK/bin -type f -iname '*test' 2>/dev/null | head -n 1)
+# Primary: bin/ folder
+BIN_FILE=$(find "$PROJECT_ROOT/benchmarks/$BENCHMARK/bin" -type f -iname '*test' 2>/dev/null | head -n 1)
 
+# Secondary: benchmark root
 if [ -z "$BIN_FILE" ]; then
-  BIN_FILE=$(find ./benchmarks/$BENCHMARK -maxdepth 1 -type f \( -iname '*test' -o -iname 'cohmm' -o -iname 'miniqmc' \) | head -n 1)
+  BIN_FILE=$(find "$PROJECT_ROOT/benchmarks/$BENCHMARK" -maxdepth 1 -type f -iname '*test' 2>/dev/null | head -n 1)
+fi
+
+# Special case: known exceptions
+if [ -z "$BIN_FILE" ]; then
+  case "$BENCHMARK" in
+    "XSBench")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
+      ;;
+    "simplemoc")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
+      ;;
+  esac
+fi
+
+# Final check
+if [ ! -f "$BIN_FILE" ]; then
+  echo "[!] Benchmark binary not found for $BENCHMARK"
+  echo "[!] Tried custom locations, still not found."
+  exit 1
 fi
 
 if [ ! -f "$BIN_FILE" ]; then
