@@ -46,22 +46,46 @@ class MultiJobSchedulingEnv(gym.Env):
             obs.extend(row[1:13].values.astype(np.float32))
         return np.array(obs, dtype=np.float32)
 
-    def step(self, actions):
+    def step(self, action):
+        if isinstance(action, (np.ndarray, tuple)):
+            action = list(action)
+        elif not isinstance(action, list):
+            action = [action] * self.num_jobs  # repeat if scalar  
         rewards = []
+
         for i in range(self.num_jobs):
             row = self.jobs[i].iloc[self.indices[i]]
-            action = actions[i]
+            act = action[i]
 
-            # Apply action semantics (core affinity or thread interleaving)
-            core_alloc_ratio = 1.0 if action == 0 else 0.5
-            duration_ratio = row["duration_time"] / (self.max_durations[i] + 1e-6)
+            # Core allocation ratio (1.0 = compact, 0.5 = thread interleaving)
+            core_alloc_ratio = 1.0 if act == 0 else 0.5
+
+            # Duration ratio = solo_time / mean_solo_time
+            solo_time = row.get("solo_time", 1.0)
+            mean_solo = np.mean([job.iloc[self.indices[i]].get("solo_time", 1.0) for job in self.jobs])
+            duration_ratio = solo_time / (mean_solo + 1e-6)
+
+            # IPC = instructions / cpu-cycles
             ipc = row["instructions"] / (row["cpu-cycles"] + 1e-6)
-            scale_factor_ratio = ipc
 
-            rwi = core_alloc_ratio * (scale_factor_ratio ** 2 + duration_ratio ** 2)
+            # Scale factor = single-core IPC / multi-core IPC (approximate with IPC for now)
+            scale_factor_ratio = ipc / (np.mean([
+                job.iloc[self.indices[i]]["instructions"] / (job.iloc[self.indices[i]]["cpu-cycles"] + 1e-6)
+                for job in self.jobs
+            ]) + 1e-6)
+
+            # L3 cache misses ratio = this_job / mean_of_all
+            l3 = row["LLC-load-misses"]
+            mean_l3 = np.mean([job.iloc[self.indices[i]]["LLC-load-misses"] for job in self.jobs])
+            l3_cache_misses_ratio = l3 / (mean_l3 + 1e-6)
+
+            # Final reward (rwi) — simplified as per paper
+            rwi = core_alloc_ratio * (scale_factor_ratio ** 2 + duration_ratio ** 2) + l3_cache_misses_ratio ** 2
             rewards.append(rwi)
 
         total_reward = sum(rewards)
+
+        # Advance all job time steps
         self.indices = [idx + 1 for idx in self.indices]
         terminated = any(self.indices[i] >= len(self.jobs[i]) for i in range(self.num_jobs))
         truncated = False
