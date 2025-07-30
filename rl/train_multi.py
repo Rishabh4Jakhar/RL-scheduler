@@ -1,5 +1,6 @@
 import os
 import random
+import numpy as np
 import pandas as pd
 from multi_env import MultiJobSchedulingEnv
 from stable_baselines3 import PPO
@@ -20,9 +21,9 @@ benchmark_data = {
 }
 
 # Configuration
-NUM_MIXES = 15      # Number of random job mixes
-JOBS_PER_MIX = 6      # Window size W
-TIMESTEPS_PER_MIX = 5000  # Training steps per mix
+NUM_MIXES = 15             # Number of random job mixes
+JOBS_PER_MIX = 6           # Window size W
+TIMESTEPS_PER_MIX = 5000   # Training steps per mix
 
 # Create a training loop across random job mixes
 model = None
@@ -33,9 +34,11 @@ for mix_num in range(NUM_MIXES):
 
     print(f"\n🔁 Training on Mix {mix_num + 1}: {selected}")
     env = MultiJobSchedulingEnv(df_pool, num_jobs=JOBS_PER_MIX, use_all_actions=False)
-    
+
+    # Check env on first time
     if model is None:
         obs, _ = env.reset()
+        check_env(env, warn=True)  # Optional: validate interface
         model = PPO("MlpPolicy", env, verbose=1)
     else:
         env.reset()
@@ -46,4 +49,3 @@ for mix_num in range(NUM_MIXES):
 # Save model after all mixes
 model.save("ppo_rwi_scheduler")
 print("\n✅ Training completed and model saved as 'ppo_rwi_scheduler.zip'")
-    

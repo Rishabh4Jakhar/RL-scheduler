@@ -58,76 +58,76 @@ class MultiJobSchedulingEnv(gym.Env):
 
         return np.concatenate(obs, dtype=np.float32)  # shape: (num_jobs * 12,)
 
-def step(self, action):
-    if isinstance(action, np.ndarray):
-        action = action.tolist()
+    def step(self, action):
+        if isinstance(action, np.ndarray):
+            action = action.tolist()
 
-    W = self.num_jobs
-    s_flat = action[:W * W]
-    r_vec = action[W * W:]
+        W = self.num_jobs
+        s_flat = action[:W * W]
+        r_vec = action[W * W:]
 
-    # Reconstruct matrices
-    S = np.array(s_flat).reshape((W, W))     # S[i][j] = 1 means job i runs with job j
-    R = np.array(r_vec)                      # R[i] ∈ {0: NoRun, 1: Core, 2: Thread}
+        # Reconstruct matrices
+        S = np.array(s_flat).reshape((W, W))     # S[i][j] = 1 means job i runs with job j
+        R = np.array(r_vec)                      # R[i] ∈ {0: NoRun, 1: Core, 2: Thread}
 
-    # Derive groups from S (i.e., connected components)
-    from scipy.sparse.csgraph import connected_components
-    from scipy.sparse import csr_matrix
+        # Derive groups from S (i.e., connected components)
+        from scipy.sparse.csgraph import connected_components
+        from scipy.sparse import csr_matrix
 
-    G = csr_matrix(S)
-    n_components, labels = connected_components(csgraph=G, directed=False, return_labels=True)
+        G = csr_matrix(S)
+        n_components, labels = connected_components(csgraph=G, directed=False, return_labels=True)
 
-    rewards = []
+        rewards = []
 
-    # Process each group of co-scheduled jobs
-    for group_id in range(n_components):
-        group_jobs = [i for i in range(W) if labels[i] == group_id and R[i] > 0]
-        if not group_jobs:
-            continue
-        if len(group_jobs) > self.Cmax:
-            group_jobs = group_jobs[:self.Cmax]  # Cmax cap
-
-        # Group-wise reward computation
-        mean_solo = np.mean([
-            self.jobs[i].iloc[self.indices[i]].get("solo_time", 1.0)
-            for i in group_jobs
-            if self.indices[i] < len(self.jobs[i])
-        ]) + 1e-6
-
-        mean_ipc = np.mean([
-            self.jobs[i].iloc[self.indices[i]]["instructions"] / 
-            (self.jobs[i].iloc[self.indices[i]]["cpu-cycles"] + 1e-6)
-            for i in group_jobs
-            if self.indices[i] < len(self.jobs[i])
-        ]) + 1e-6
-
-        mean_l3 = np.mean([
-            self.jobs[i].iloc[self.indices[i]]["LLC-load-misses"]
-            for i in group_jobs
-            if self.indices[i] < len(self.jobs[i])
-        ]) + 1e-6
-
-        for i in group_jobs:
-            if self.indices[i] >= len(self.jobs[i]):
+        # Process each group of co-scheduled jobs
+        for group_id in range(n_components):
+            group_jobs = [i for i in range(W) if labels[i] == group_id and R[i] > 0]
+            if not group_jobs:
                 continue
+            if len(group_jobs) > self.Cmax:
+                group_jobs = group_jobs[:self.Cmax]  # Cmax cap
 
-            row = self.jobs[i].iloc[self.indices[i]]
-            alloc_type = R[i]  # 1 = Core, 2 = Thread
+            # Group-wise reward computation
+            mean_solo = np.mean([
+                self.jobs[i].iloc[self.indices[i]].get("solo_time", 1.0)
+                for i in group_jobs
+                if self.indices[i] < len(self.jobs[i])
+            ]) + 1e-6
 
-            core_alloc_ratio = 1.0 if alloc_type == 1 else 0.5  # Thread
-            solo_time = row.get("solo_time", 1.0)
-            duration_ratio = solo_time / mean_solo
+            mean_ipc = np.mean([
+                self.jobs[i].iloc[self.indices[i]]["instructions"] / 
+                (self.jobs[i].iloc[self.indices[i]]["cpu-cycles"] + 1e-6)
+                for i in group_jobs
+                if self.indices[i] < len(self.jobs[i])
+            ]) + 1e-6
 
-            ipc = row["instructions"] / (row["cpu-cycles"] + 1e-6)
-            scale_factor_ratio = ipc / mean_ipc
+            mean_l3 = np.mean([
+                self.jobs[i].iloc[self.indices[i]]["LLC-load-misses"]
+                for i in group_jobs
+                if self.indices[i] < len(self.jobs[i])
+            ]) + 1e-6
 
-            l3 = row["LLC-load-misses"]
-            l3_cache_miss_ratio = l3 / mean_l3
+            for i in group_jobs:
+                if self.indices[i] >= len(self.jobs[i]):
+                    continue
 
-            rwi = core_alloc_ratio * (scale_factor_ratio**2 + duration_ratio**2) + l3_cache_miss_ratio**2
-            rewards.append(rwi)
+                row = self.jobs[i].iloc[self.indices[i]]
+                alloc_type = R[i]  # 1 = Core, 2 = Thread
 
-            self.indices[i] += 1
+                core_alloc_ratio = 1.0 if alloc_type == 1 else 0.5  # Thread
+                solo_time = row.get("solo_time", 1.0)
+                duration_ratio = solo_time / mean_solo
+
+                ipc = row["instructions"] / (row["cpu-cycles"] + 1e-6)
+                scale_factor_ratio = ipc / mean_ipc
+
+                l3 = row["LLC-load-misses"]
+                l3_cache_miss_ratio = l3 / mean_l3
+
+                rwi = core_alloc_ratio * (scale_factor_ratio**2 + duration_ratio**2) + l3_cache_miss_ratio**2
+                rewards.append(rwi)
+
+                self.indices[i] += 1
 
 
         # Total reward = sum of rewards of selected jobs
