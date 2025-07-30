@@ -20,7 +20,7 @@ benchmark_data = {
 }
 
 # Configuration
-NUM_MIXES = 50        # Number of random job mixes
+NUM_MIXES = 15      # Number of random job mixes
 JOBS_PER_MIX = 6      # Window size W
 TIMESTEPS_PER_MIX = 5000  # Training steps per mix
 

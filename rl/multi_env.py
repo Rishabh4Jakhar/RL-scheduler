@@ -3,7 +3,7 @@ import numpy as np
 from gymnasium import spaces
 
 class MultiJobSchedulingEnv(gym.Env):
-    def __init__(self, benchmark_pool, num_jobs=6, use_all_actions=False, shuffle_on_reset=True):
+    def __init__(self, benchmark_pool, num_jobs=6, Cmax=4, use_all_actions=False, shuffle_on_reset=True):
         super(MultiJobSchedulingEnv, self).__init__()
         assert len(benchmark_pool) >= num_jobs, f"Pool has {len(benchmark_pool)} jobs, but need at least {num_jobs}"
 
@@ -11,15 +11,20 @@ class MultiJobSchedulingEnv(gym.Env):
         self.num_jobs = num_jobs
         self.use_all_actions = use_all_actions
         self.shuffle_on_reset = shuffle_on_reset
-
+        self.Cmax = Cmax
         self.jobs = []      # actual jobs selected per episode
         self.indices = []   # per-job row index
         self.max_durations = []
         self.max_llc_misses = []
 
         self.num_actions = 3 if use_all_actions else 2
-        self.action_space = spaces.MultiDiscrete([self.num_actions] * self.num_jobs)
+        #self.action_space = spaces.Dict({
+        #    "select": spaces.MultiBinary(self.num_jobs),  # job selection vector
+        #    "assign": spaces.MultiDiscrete([2] * self.num_jobs)  # 0: Core, 1: Thread
+        #})
+        self.action_space = spaces.MultiDiscrete([2] * (2 * self.num_jobs))
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(self.num_jobs * 12,), dtype=np.float32)
+
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -42,53 +47,90 @@ class MultiJobSchedulingEnv(gym.Env):
     def _get_obs(self):
         obs = []
         for i in range(self.num_jobs):
-            row = self.jobs[i].iloc[self.indices[i]]
-            obs.extend(row[1:13].values.astype(np.float32))
-        return np.array(obs, dtype=np.float32)
+            idx = self.indices[i]
+            if idx < len(self.jobs[i]):
+                row = self.jobs[i].iloc[idx]
+                features = row[1:13].values.astype(np.float32)  # use the 12 perf counters
+            else:
+                features = np.zeros(12, dtype=np.float32)  # padding if job has ended
+            obs.append(features)
+
+        return np.concatenate(obs, dtype=np.float32)  # shape: (num_jobs * 12,)
 
     def step(self, action):
-        if isinstance(action, (np.ndarray, tuple)):
-            action = list(action)
-        elif not isinstance(action, list):
-            action = [action] * self.num_jobs  # repeat if scalar  
+        if isinstance(action, np.ndarray):
+            action = action.tolist()
+
+        half = self.num_jobs
+        select_mask = action[:half]
+        assign_mask = action[half:]
+        # Enforce Cmax constraint
+        selected_jobs = [i for i, sel in enumerate(select_mask) if sel == 1]
+        if len(selected_jobs) > self.Cmax:
+            # Clip or randomly drop extra selections
+            selected_jobs = selected_jobs[:self.Cmax]
+
         rewards = []
 
-        for i in range(self.num_jobs):
+        for i in selected_jobs:
+            if self.indices[i] >= len(self.jobs[i]):
+                continue
             row = self.jobs[i].iloc[self.indices[i]]
-            act = action[i]
+
+            act = assign_mask[i]  # 0 = core, 1 = thread
 
             # Core allocation ratio (1.0 = compact, 0.5 = thread interleaving)
             core_alloc_ratio = 1.0 if act == 0 else 0.5
 
-            # Duration ratio = solo_time / mean_solo_time
+            # Duration ratio
             solo_time = row.get("solo_time", 1.0)
-            mean_solo = np.mean([job.iloc[self.indices[i]].get("solo_time", 1.0) for job in self.jobs])
+            mean_solo = np.mean([
+                self.jobs[j].iloc[self.indices[j]]["solo_time"]
+                for j in selected_jobs
+                if self.indices[j] < len(self.jobs[j])
+            ]) or 1.0
+
+
             duration_ratio = solo_time / (mean_solo + 1e-6)
 
-            # IPC = instructions / cpu-cycles
+            # IPC
             ipc = row["instructions"] / (row["cpu-cycles"] + 1e-6)
+            scale_factor_ratio = ipc / (
+                np.mean([
+                    self.jobs[j].iloc[self.indices[j]]["instructions"] / 
+                    (self.jobs[j].iloc[self.indices[j]]["cpu-cycles"] + 1e-6)
+                    for j in selected_jobs
+                    if self.indices[j] < len(self.jobs[j])
+                ]) + 1e-6
+            )
 
-            # Scale factor = single-core IPC / multi-core IPC (approximate with IPC for now)
-            scale_factor_ratio = ipc / (np.mean([
-                job.iloc[self.indices[i]]["instructions"] / (job.iloc[self.indices[i]]["cpu-cycles"] + 1e-6)
-                for job in self.jobs
-            ]) + 1e-6)
 
-            # L3 cache misses ratio = this_job / mean_of_all
+
+            # L3 cache ratio
             l3 = row["LLC-load-misses"]
-            mean_l3 = np.mean([job.iloc[self.indices[i]]["LLC-load-misses"] for job in self.jobs])
+            mean_l3 = np.mean([
+                self.jobs[j].iloc[self.indices[j]]["LLC-load-misses"]
+                for j in selected_jobs
+                if self.indices[j] < len(self.jobs[j])
+            ]) or 1.0
+
+
             l3_cache_misses_ratio = l3 / (mean_l3 + 1e-6)
 
-            # Final reward (rwi) — simplified as per paper
-            rwi = core_alloc_ratio * (scale_factor_ratio ** 2 + duration_ratio ** 2) + l3_cache_misses_ratio ** 2
+            # Final reward
+            rwi = core_alloc_ratio * (scale_factor_ratio**2 + duration_ratio**2) + l3_cache_misses_ratio**2
             rewards.append(rwi)
 
+            # Advance this job’s time step
+            self.indices[i] += 1
+
+        # Total reward = sum of rewards of selected jobs
         total_reward = sum(rewards)
 
-        # Advance all job time steps
-        self.indices = [idx + 1 for idx in self.indices]
+        # Done if any job finishes (or all jobs for stricter criteria)
         terminated = any(self.indices[i] >= len(self.jobs[i]) for i in range(self.num_jobs))
         truncated = False
 
         obs = self._get_obs() if not terminated else np.zeros(self.num_jobs * 12, dtype=np.float32)
         return obs, total_reward, terminated, truncated, {}
+
