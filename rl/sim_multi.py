@@ -20,60 +20,89 @@ for mix_index, mix in enumerate(job_mixes):
     print(f"\n========== Evaluating Mix {mix_index + 1} ==========")
     print(f"Jobs: {mix}")
 
+    # load data and init env
     dfs = [pd.read_csv(f"/home/rishabh2025/profiler/logs/{job}/{job}_dataset.csv") for job in mix]
-    env = MultiJobSchedulingEnv(dfs, num_jobs=6, use_all_actions=False, shuffle_on_reset=False)
-
+    env = MultiJobSchedulingEnv(dfs, num_jobs=6, Cmax=4, use_all_actions=False, shuffle_on_reset=False)
     obs, _ = env.reset()
-    total_reward = 0
-    step_count = 0
-    done = False
 
-    S_final = None
-    R_final = None
+    W = env.num_jobs
+    Cmax = env.Cmax
 
-    while not done:
+    # track scheduling
+    scheduled = [False] * W
+
+    # S: W×W matrix (slot × job), R: global length-W vector
+    S = np.zeros((W, W), dtype=int)
+    R = np.zeros(W, dtype=int)
+
+    row = 0
+    while row < W and not all(scheduled):
         action, _ = model.predict(obs)
-        obs, reward, terminated, truncated, _ = env.step(action)
-        total_reward += reward
-        step_count += 1
 
-        W = env.num_jobs
-        s_flat = action[:W * W]
-        r_vec = action[W * W:]
+        # unpack
+        s_flat = action[: W * W]
+        r_vec = action[W * W : W * W + W]
 
-        S_final = np.array(s_flat).reshape((W, W))
-        R_final = np.array(r_vec)
+        # candidate select mask = any 1 in column of S_flat
+        sel = (np.array(s_flat).reshape(W, W).sum(axis=0) > 0).astype(int)
 
-        done = terminated or truncated
+        # mask out already scheduled
+        for j in range(W):
+            if scheduled[j]:
+                sel[j] = 0
 
-    # Final reward improvement calculation
+        # enforce Cmax by picking top-Cmax jobs by r_vec
+        if sel.sum() > Cmax:
+            order = np.argsort(-np.array(r_vec))
+            keep = set(order[:Cmax])
+            sel = np.array([1 if (sel[j] and j in keep) else 0 for j in range(W)])
+
+        # record this slot in S
+        S[row, :] = sel
+
+        # fill R[j] if first time j is scheduled: force 0→1 (Core) so no one is left unassigned
+        for j in range(W):
+            if sel[j] and not scheduled[j]:
+                val = int(r_vec[j])
+                R[j] = val if val in (1, 2) else 1   # default 1=Core
+
+        # build a step_action that only advances these jobs
+        step_action = np.zeros(W * W + W, dtype=int)
+        for j in range(W):
+            if sel[j]:
+                step_action[j*(W+1)] = 1          # set S_diag[j] = 1
+                step_action[W*W + j] = r_vec[j]  # preserve resource choice
+
+        # step env and mark scheduled
+        obs, _, _, _, _ = env.step(step_action)
+        for j in range(W):
+            if sel[j]:
+                scheduled[j] = True
+
+        row += 1
+
+    # compute final rwf
     solo_times = [df.iloc[0]["solo_time"] for df in dfs]
-    total_solo_time = sum(solo_times)
-    co_run_times = [df["duration_time"].iloc[:env.indices[i]].sum() / 1e6 for i, df in enumerate(dfs)]
-    total_corun_time = max(co_run_times)
-    rwf = ((total_solo_time / (total_corun_time + 1e-6)) - 1) * 100
+    total_solo = sum(solo_times)
+    corun_times = [df["duration_time"].iloc[:env.indices[i]].sum()/1e6 for i, df in enumerate(dfs)]
+    total_corun = max(corun_times)
+    rwf = ((total_solo / (total_corun + 1e-6)) - 1) * 100
 
     print(f"\n🧾 Final Reward (RWF): {rwf:.2f}% improvement over time-sharing")
+
     print("\n🧩 Final Co-Scheduling Matrices:")
-    print("S (Selection Matrix):")
-    print(S_final.astype(int))
-    print("R (Resource Assignment Vector):")
-    print(R_final.astype(int))
+    print("S:")
+    print(S)
+    print("R:")
+    print(R)   # length W vector, values in {0,1,2}
 
-    print("\n📋 Final Co-Scheduling Decision:")
-    graph = csr_matrix(S_final)
-    n_components, labels = connected_components(csgraph=graph, directed=False, return_labels=True)
-
-    for group_id in range(n_components):
-        group_jobs = [i for i, label in enumerate(labels) if label == group_id and R_final[i] > 0]
-        if not group_jobs:
+    # Pretty‑print each scheduling slot (row of S) independently
+    print("\n📋 Co-Scheduling Groups:")
+    for slot in range(W):
+        jobs_in_slot = list(np.where(S[slot] == 1)[0])
+        if not jobs_in_slot:
             continue
-        print(f"  ▪️ Group {group_id}:")
-        for i in group_jobs:
-            rtype = "Core" if R_final[i] == 1 else "Thread" if R_final[i] == 2 else "Unassigned"
-            print(f"     - Job {i} → {rtype}")
+        modes = ["Core" if R[j] == 1 else "Thread" for j in jobs_in_slot]
+        print(f"  ▪️ Slot {slot}: Jobs {jobs_in_slot} → Modes {modes}")
 
-    avg_reward = total_reward / step_count if step_count > 0 else 0.0
-    print(f"\n✅ Total RWI Reward for Mix {mix_index + 1}: {total_reward:.4f}")
-    print(f"✅ Average RWI per step: {avg_reward:.4f}")
     print("==============================================\n")
