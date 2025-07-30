@@ -22,7 +22,8 @@ class MultiJobSchedulingEnv(gym.Env):
         #    "select": spaces.MultiBinary(self.num_jobs),  # job selection vector
         #    "assign": spaces.MultiDiscrete([2] * self.num_jobs)  # 0: Core, 1: Thread
         #})
-        self.action_space = spaces.MultiDiscrete([2] * (2 * self.num_jobs))
+        # Total: W×W (for S) + W (for R)
+        self.action_space = spaces.MultiDiscrete([2] * (self.num_jobs ** 2) + [3] * self.num_jobs)
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(self.num_jobs * 12,), dtype=np.float32)
 
 
@@ -57,72 +58,77 @@ class MultiJobSchedulingEnv(gym.Env):
 
         return np.concatenate(obs, dtype=np.float32)  # shape: (num_jobs * 12,)
 
-    def step(self, action):
-        if isinstance(action, np.ndarray):
-            action = action.tolist()
+def step(self, action):
+    if isinstance(action, np.ndarray):
+        action = action.tolist()
 
-        half = self.num_jobs
-        select_mask = action[:half]
-        assign_mask = action[half:]
-        # Enforce Cmax constraint
-        selected_jobs = [i for i, sel in enumerate(select_mask) if sel == 1]
-        if len(selected_jobs) > self.Cmax:
-            # Clip or randomly drop extra selections
-            selected_jobs = selected_jobs[:self.Cmax]
+    W = self.num_jobs
+    s_flat = action[:W * W]
+    r_vec = action[W * W:]
 
-        rewards = []
+    # Reconstruct matrices
+    S = np.array(s_flat).reshape((W, W))     # S[i][j] = 1 means job i runs with job j
+    R = np.array(r_vec)                      # R[i] ∈ {0: NoRun, 1: Core, 2: Thread}
 
-        for i in selected_jobs:
+    # Derive groups from S (i.e., connected components)
+    from scipy.sparse.csgraph import connected_components
+    from scipy.sparse import csr_matrix
+
+    G = csr_matrix(S)
+    n_components, labels = connected_components(csgraph=G, directed=False, return_labels=True)
+
+    rewards = []
+
+    # Process each group of co-scheduled jobs
+    for group_id in range(n_components):
+        group_jobs = [i for i in range(W) if labels[i] == group_id and R[i] > 0]
+        if not group_jobs:
+            continue
+        if len(group_jobs) > self.Cmax:
+            group_jobs = group_jobs[:self.Cmax]  # Cmax cap
+
+        # Group-wise reward computation
+        mean_solo = np.mean([
+            self.jobs[i].iloc[self.indices[i]].get("solo_time", 1.0)
+            for i in group_jobs
+            if self.indices[i] < len(self.jobs[i])
+        ]) + 1e-6
+
+        mean_ipc = np.mean([
+            self.jobs[i].iloc[self.indices[i]]["instructions"] / 
+            (self.jobs[i].iloc[self.indices[i]]["cpu-cycles"] + 1e-6)
+            for i in group_jobs
+            if self.indices[i] < len(self.jobs[i])
+        ]) + 1e-6
+
+        mean_l3 = np.mean([
+            self.jobs[i].iloc[self.indices[i]]["LLC-load-misses"]
+            for i in group_jobs
+            if self.indices[i] < len(self.jobs[i])
+        ]) + 1e-6
+
+        for i in group_jobs:
             if self.indices[i] >= len(self.jobs[i]):
                 continue
+
             row = self.jobs[i].iloc[self.indices[i]]
+            alloc_type = R[i]  # 1 = Core, 2 = Thread
 
-            act = assign_mask[i]  # 0 = core, 1 = thread
-
-            # Core allocation ratio (1.0 = compact, 0.5 = thread interleaving)
-            core_alloc_ratio = 1.0 if act == 0 else 0.5
-
-            # Duration ratio
+            core_alloc_ratio = 1.0 if alloc_type == 1 else 0.5  # Thread
             solo_time = row.get("solo_time", 1.0)
-            mean_solo = np.mean([
-                self.jobs[j].iloc[self.indices[j]]["solo_time"]
-                for j in selected_jobs
-                if self.indices[j] < len(self.jobs[j])
-            ]) or 1.0
+            duration_ratio = solo_time / mean_solo
 
-
-            duration_ratio = solo_time / (mean_solo + 1e-6)
-
-            # IPC
             ipc = row["instructions"] / (row["cpu-cycles"] + 1e-6)
-            scale_factor_ratio = ipc / (
-                np.mean([
-                    self.jobs[j].iloc[self.indices[j]]["instructions"] / 
-                    (self.jobs[j].iloc[self.indices[j]]["cpu-cycles"] + 1e-6)
-                    for j in selected_jobs
-                    if self.indices[j] < len(self.jobs[j])
-                ]) + 1e-6
-            )
+            scale_factor_ratio = ipc / mean_ipc
 
-
-
-            # L3 cache ratio
             l3 = row["LLC-load-misses"]
-            mean_l3 = np.mean([
-                self.jobs[j].iloc[self.indices[j]]["LLC-load-misses"]
-                for j in selected_jobs
-                if self.indices[j] < len(self.jobs[j])
-            ]) or 1.0
+            l3_cache_miss_ratio = l3 / mean_l3
 
-
-            l3_cache_misses_ratio = l3 / (mean_l3 + 1e-6)
-
-            # Final reward
-            rwi = core_alloc_ratio * (scale_factor_ratio**2 + duration_ratio**2) + l3_cache_misses_ratio**2
+            rwi = core_alloc_ratio * (scale_factor_ratio**2 + duration_ratio**2) + l3_cache_miss_ratio**2
             rewards.append(rwi)
 
-            # Advance this job’s time step
             self.indices[i] += 1
+
 
         # Total reward = sum of rewards of selected jobs
         total_reward = sum(rewards)
