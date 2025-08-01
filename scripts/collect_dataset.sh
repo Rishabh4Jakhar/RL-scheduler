@@ -10,7 +10,7 @@ if [ -z "$BENCHMARK" ]; then
 fi
 
 echo "[*] Running for benchmark: $BENCHMARK"
-mkdir -p logs/$BENCHMARK
+mkdir -p /home/rishabh2025/profiler/logs/$BENCHMARK
 
 # === Step 0: Check if a custom command exists ===
 CUSTOM_FILE="custom_commands.txt"

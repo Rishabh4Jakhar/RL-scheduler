@@ -1,73 +1,54 @@
 #!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$SCRIPT_DIR/.."
+
 BENCHMARK=$1
 shift
 BENCH_ARGS="$@"
 
-mkdir -p logs/$BENCHMARK
+mkdir -p /home/rishabh2025/profiler/logs/$BENCHMARK
+
+# ➤ Detect base benchmark name (strip _custom*)
+BASE_NAME=$(echo "$BENCHMARK" | sed -E 's/_custom[0-9]*//')
+
+# === Step 1: Find binary ===
 
 # Primary: bin/ folder
-BIN_FILE=$(find "$PROJECT_ROOT/benchmarks/$BENCHMARK/bin" -type f -iname '*test' 2>/dev/null | head -n 1)
+BIN_FILE=$(find "$PROJECT_ROOT/benchmarks/$BASE_NAME/bin" -type f -iname '*test' 2>/dev/null | head -n 1)
 
-# Secondary: benchmark root
+# Secondary: benchmark root dir
 if [ -z "$BIN_FILE" ]; then
-  BIN_FILE=$(find "$PROJECT_ROOT/benchmarks/$BENCHMARK" -maxdepth 1 -type f -iname '*test' 2>/dev/null | head -n 1)
+  BIN_FILE=$(find "$PROJECT_ROOT/benchmarks/$BASE_NAME" -maxdepth 1 -type f -iname '*test' 2>/dev/null | head -n 1)
 fi
 
-# Special case: known exceptions
+# Fallbacks (special cases)
 if [ -z "$BIN_FILE" ]; then
-  case "$BENCHMARK" in
+  case "$BASE_NAME" in
     "XSBench")
       BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
       ;;
     "simplemoc")
       BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
       ;;
-    "simplemoc_custom1")
-      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
-      ;;
-    "XSBench_custom1")
-      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
-      ;;
-    "XSBench_custom2")
-      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
-      ;;
-    "XSBench_custom3")
-      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
-      ;;
-    "simplemoc_custom2")
-      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
-      ;;
-    "simplemoc_custom3")
-      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
-      ;;  
   esac
 fi
 
 # Final check
 if [ ! -f "$BIN_FILE" ]; then
   echo "[!] Benchmark binary not found for $BENCHMARK"
-  echo "[!] Tried custom locations, still not found."
   exit 1
 fi
-
-if [ ! -f "$BIN_FILE" ]; then
-  echo "[!] Benchmark binary not found for $BENCHMARK"
-  exit 1
-fi
-
-BIN_DIR=$(dirname "$BIN_FILE")
-BIN_NAME=$(basename "$BIN_FILE")
 
 echo "[*] Using binary: $BIN_FILE"
 
+# === Step 2: Resolve working dir and relative binary path ===
+
 if [[ "$BIN_FILE" == *"/bin/"* ]]; then
-  cd_target=$(dirname "$BIN_DIR")
-  binary_rel_path="bin/$BIN_NAME"
+  cd_target=$(dirname "$BIN_FILE")/..
+  binary_rel_path="bin/$(basename "$BIN_FILE")"
 else
-  cd_target="$BIN_DIR"
-  binary_rel_path="./$BIN_NAME"
+  cd_target=$(dirname "$BIN_FILE")
+  binary_rel_path="./$(basename "$BIN_FILE")"
 fi
 
 # Group C counters
