@@ -24,6 +24,24 @@ if [ -z "$BIN_FILE" ]; then
     "simplemoc")
       BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
       ;;
+    "simplemoc_custom1")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
+      ;;
+    "XSBench_custom1")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
+      ;;
+    "XSBench_custom2")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
+      ;;
+    "XSBench_custom3")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/XSBench/openmp-threading/XSBench_test"
+      ;;
+    "simplemoc_custom2")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
+      ;;
+    "simplemoc_custom3")
+      BIN_FILE="$PROJECT_ROOT/benchmarks/simplemoc/src/SimpleMOC_test"
+      ;;  
   esac
 fi
 
@@ -54,4 +72,4 @@ else
 fi
 
 # Final execution
-perf stat -e duration_time,task-clock,context-switches,cpu-cycles -I 50 -a -x, -o logs/$BENCHMARK/group_A.csv -- bash -c "cd $cd_target && numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 $binary_rel_path $BENCH_ARGS"
+perf stat -e duration_time,task-clock,context-switches,cpu-cycles -I 50 -a -x, -o /home/rishabh2025/profiler/logs/$BENCHMARK/group_A.csv -- bash -c "cd $cd_target && numactl --physcpubind=0,2,4,6,8,10,12,14,16,18 $binary_rel_path $BENCH_ARGS"

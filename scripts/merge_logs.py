@@ -7,7 +7,7 @@ if len(sys.argv) != 3:
 
 benchmark = sys.argv[1]
 solo_time = float(sys.argv[2])
-log_path = f"./logs/{benchmark}"
+log_path = f"/home/rishabh2025/profiler/logs/{benchmark}"
 
 # Replace with your actual paths
 group_A = pd.read_csv(f"{log_path}/group_A.csv", comment='#', header=None,

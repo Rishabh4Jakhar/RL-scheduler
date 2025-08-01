@@ -1,119 +1,151 @@
+#!/usr/bin/env python3
 import os
 import sys
 import subprocess
 import pandas as pd
 import numpy as np
-from multi_env import MultiJobSchedulingEnv
 from stable_baselines3 import PPO
+from multi_env import MultiJobSchedulingEnv
 
-# === Step 1: Parse arguments ===
-W = int(sys.argv[1]) if len(sys.argv) > 1 else 6
+# ----------------------
+# 1) Parse args
+# ----------------------
+W    = int(sys.argv[1]) if len(sys.argv) > 1 else 6
 Cmax = int(sys.argv[2]) if len(sys.argv) > 2 else 4
 
-logs_base = "/home/rishabh2025/profiler/logs"
-dataset_suffix = "_dataset.csv"
-
-jobs = []
-job_cmds = {}
-
 print(f"\nEnter {W} job names. You can also provide custom jobs like:")
-print("  XSBench_custom1 --cmd ../../benchmarks/XSBench/openmp-threading/XSBench -G nuclide -g 7000 -l 200 -p 350000 -t 12")
-print("If no --cmd is given, default benchmark logs are used (like 'AMG')")
+print("  XSBench_custom1 --cmd /full/path/to/XSBench -G nuclide -g 7000 -l 200 -p 350000 -t 12")
+print("If no --cmd is given, default benchmark logs are used (e.g. 'AMG')\n")
 
-# === Step 2: Collect job definitions ===
+jobs            = []
+custom_commands = {}
+
 for i in range(W):
-    line = input(f"\n▶️ Enter job {i+1}: ").strip()
+    line = input(f"▶️ Enter job {i+1}: ").strip()
+    if not line:
+        print("❌ Empty input, exiting.")
+        sys.exit(1)
     if "--cmd" in line:
-        parts = line.split("--cmd", maxsplit=1)
-        job_name = parts[0].strip()
-        job_cmd = parts[1].strip()
-        job_cmds[job_name] = job_cmd
+        name, cmd = line.split("--cmd", 1)
+        name = name.strip()
+        cmd  = cmd.strip()
+        jobs.append(name)
+        custom_commands[name] = cmd
     else:
-        job_name = line
-    jobs.append(job_name)
+        jobs.append(line)
 
-# === Step 3: Load logs or generate them ===
+# ----------------------
+# 2) Ensure logs exist
+# ----------------------
+LOG_BASE = os.path.expanduser("~/profiler/logs")
+COLLECT = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                        "..", "scripts", "collect_dataset.sh"))
+
+for job in jobs:
+    ds_dir  = os.path.join(LOG_BASE, job)
+    ds_file = os.path.join(ds_dir, f"{job}_dataset.csv")
+    if os.path.exists(ds_file):
+        print(f"✅ Found existing logs for {job}")
+        continue
+
+    print(f"[!] Logs not found for {job}, running collect_dataset.sh…")
+    os.makedirs(ds_dir, exist_ok=True)
+
+    if job in custom_commands:
+        # write a temp custom_commands.txt
+        cc_path = os.path.join(os.path.dirname(__file__), "custom_commands.txt")
+        with open(cc_path, "a") as f:
+            f.write(f"{job}::{custom_commands[job]}\n")
+
+    # invoke the script
+    ret = subprocess.call(f"bash {COLLECT} {job}", shell=True)
+    if ret != 0 or not os.path.exists(ds_file):
+        print(f"❌ Failed to generate logs for {job}")
+        sys.exit(1)
+
+    print(f"✅ Logs generated for {job}")
+
+# ----------------------
+# 3) Load dataframes
+# ----------------------
 dfs = []
 for job in jobs:
-    dataset_path = os.path.join(logs_base, job, f"{job}{dataset_suffix}")
-    if not os.path.exists(dataset_path):
-        print(f"[!] Logs not found for {job}. Generating...")
-        os.makedirs(os.path.join(logs_base, job), exist_ok=True)
+    df = pd.read_csv(os.path.join(LOG_BASE, job, f"{job}_dataset.csv"))
+    dfs.append(df)
 
-        if job in job_cmds:
-            run_cmd = job_cmds[job]
-            full_cmd = f"""
-            perf stat -e duration_time,task-clock,context-switches,cpu-cycles,instructions,LLC-load-misses -I 50 -a -x, -o {logs_base}/{job}/group_A.csv -- bash -c "{run_cmd}"
-            """
-            print(f"⏳ Running custom command for {job}...")
-            subprocess.run(full_cmd, shell=True, executable="/bin/bash")
+# ----------------------
+# 4) Load RL model and create env
+# ----------------------
+model = PPO.load(os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                              "ppo_rwi_scheduler.zip")))
+env   = MultiJobSchedulingEnv(dfs, num_jobs=W, Cmax=Cmax,
+                              use_all_actions=False,
+                              shuffle_on_reset=False)
 
-            subprocess.run(f"python3 scripts/merge.py {job}", shell=True)
-
-        else:
-            print(f"⏳ Using collect_dataset.sh for {job}...")
-            subprocess.run(f"bash scripts/collect_dataset.sh {job}", shell=True)
-
-    if not os.path.exists(dataset_path):
-        raise FileNotFoundError(f"❌ Dataset still not found for {job}")
-    dfs.append(pd.read_csv(dataset_path))
-
-# === Step 4: Run simulation ===
-env = MultiJobSchedulingEnv(dfs, num_jobs=W, Cmax=Cmax, use_all_actions=False, shuffle_on_reset=False)
-model = PPO.load("ppo_rwi_scheduler")
 obs, _ = env.reset()
 
-S = np.zeros((W, W), dtype=int)
-R = np.zeros(W, dtype=int)
+# ----------------------
+# 5) Simulate and build S, R
+# ----------------------
+S         = np.zeros((W, W), dtype=int)
+R         = np.zeros(W, dtype=int)
 scheduled = [False] * W
-row = 0
+row       = 0
 
 while row < W and not all(scheduled):
-    action, _ = model.predict(obs)
-    s_flat = action[:W*W]
-    r_vec = action[W*W:W*W+W]
-    sel = np.array(s_flat).reshape(W, W).sum(axis=0)
+    action, _ = model.predict(obs, deterministic=True)
+    s_flat    = action[: W*W]
+    r_vec     = action[W*W : W*W + W]
+
+    sel = s_flat.reshape(W, W).sum(axis=0)
     sel = (sel > 0).astype(int)
+    # mask out already scheduled
     for j in range(W):
         if scheduled[j]:
             sel[j] = 0
+    # enforce Cmax
     if sel.sum() > Cmax:
-        order = np.argsort(-np.array(r_vec))
-        keep = order[:Cmax]
-        mask = np.zeros(W, dtype=int)
+        order = np.argsort(-r_vec)
+        keep  = order[:Cmax]
+        mask  = np.zeros(W, dtype=int)
         mask[keep] = 1
         sel = sel * mask
 
     S[row, :] = sel
     for j in range(W):
         if sel[j]:
-            R[j] = int(r_vec[j]) + 1  # 1=Core, 2=Thread
+            R[j] = int(r_vec[j]) + 1  # 1 = Core, 2 = Thread
 
-    step_action = np.zeros(W * W + W, dtype=int)
+    # advance env
+    step_act = np.zeros(W*W + W, dtype=int)
     for j in range(W):
         if sel[j]:
-            step_action[j * (W + 1)] = 1
-            step_action[W * W + j] = r_vec[j]
-    obs, _, _, _, _ = env.step(step_action)
+            step_act[j*(W+1)]     = 1
+            step_act[W*W + j]     = r_vec[j]
+    obs, _, term, trunc, _ = env.step(step_act)
 
     for j in range(W):
         if sel[j]:
             scheduled[j] = True
-
     row += 1
+    if term or trunc:
+        break
 
-# === Step 5: Output Results ===
-print(f"\n🧩 Final Co-Scheduling Matrices:")
-print("S:")
+# ----------------------
+# 6) Print Results
+# ----------------------
+print("\n🧩 Final Co-Scheduling Matrix S:")
 print(S)
-print("R:")
+print("\n🧩 Final Resource Vector R:")
 print(R)
 
 print("\n📋 Co-Scheduling Groups:")
 for i in range(W):
-    jobs_in_group = list(np.where(S[i] == 1)[0])
-    if not jobs_in_group:
+    group = np.where(S[i] == 1)[0]
+    if len(group) == 0:
         continue
-    modes = ["Core" if R[j] == 1 else "Thread" for j in jobs_in_group]
-    job_names = [jobs[j] for j in jobs_in_group]
-    print(f"  ▪️ Slot {i}: {job_names} → Modes {modes}")
+    modes = ["Core" if R[j] == 1 else "Thread" for j in group]
+    names = [jobs[j] for j in group]
+    print(f"  ▪️ Slot {i}: {names} → {modes}")
+
+print("\n✅ Done.")
