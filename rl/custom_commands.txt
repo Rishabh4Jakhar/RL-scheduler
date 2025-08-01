@@ -6,3 +6,7 @@ simplemoc_custom1::/home/rishabh2025/profiler/benchmarks/simplemoc/src/SimpleMOC
 XSBench_custom1::/home/rishabh2025/profiler/benchmarks/XSBench/openmp-threading/XSBench_test -G nuclide -g 7000 -l 200 -p 350000 -t 12
 XSBench_custom2::../../benchmarks/XSBench/openmp-threading/XSBench -t 12 -p 1000000
 simplemoc_custom2::../../benchmarks/simplemoc/src/SimpleMOC_test -i ../../benchmarks/simplemoc/src/custom_input_3.in -t 12
+CoMD_custom1::../../benchmarks/CoMD/bin/CoMD-mpi -x 60 -y 60 -z 60 -n 50
+miniMD_custom1::../../benchmarks/miniMD/ref/miniMD -i ../../benchmarks/miniMD/in.lj.txt -t 10000
+miniQMC_custom1::../../benchmarks/miniQMC/bin/qmcpack ../../benchmarks/miniQMC/tests/test.in.xml --particles 4000
+Quicksilver_custom1::../../benchmarks/Quicksilver/src/qs -i ../../benchmarks/Quicksilver/input_deck/Teaser.inp
