@@ -1,0 +1,8 @@
+simplemoc_custom1::/home/rishabh2025/profiler/benchmarks/simplemoc/src/SimpleMOC_test -i /home/rishabh2025/profiler/benchmarks/simplemoc/src/custom_input_2.in -t 12
+XSBench_custom1::/home/rishabh2025/profiler/benchmarks/XSBench/openmp-threading/XSBench_test -G nuclide -g 7000 -l 200 -p 350000 -t 12
+simplemoc_custom1::/home/rishabh2025/profiler/benchmarks/simplemoc/src/SimpleMOC_test -i /home/rishabh2025/profiler/benchmarks/simplemoc/src/custom_input_2.in -t 12
+simplemoc_custom1::/home/rishabh2025/profiler/benchmarks/simplemoc/src/SimpleMOC_test -i /home/rishabh2025/profiler/benchmarks/simplemoc/src/custom_input_2.in -t 12
+simplemoc_custom1::/home/rishabh2025/profiler/benchmarks/simplemoc/src/SimpleMOC_test -i /home/rishabh2025/profiler/benchmarks/simplemoc/src/custom_input_2.in -t 12
+XSBench_custom1::/home/rishabh2025/profiler/benchmarks/XSBench/openmp-threading/XSBench_test -G nuclide -g 7000 -l 200 -p 350000 -t 12
+XSBench_custom2::../../benchmarks/XSBench/openmp-threading/XSBench -t 12 -p 1000000
+simplemoc_custom2::../../benchmarks/simplemoc/src/SimpleMOC_test -i ../../benchmarks/simplemoc/src/custom_input_3.in -t 12
