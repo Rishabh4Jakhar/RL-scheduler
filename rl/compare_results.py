@@ -10,15 +10,15 @@ np.random.seed(0) # For reproducibility
 
 # === 1. Define 12 six-job mixes using your 10 benchmarks ===
 BENCHS = ["AMG", "simplemoc", "Quicksilver", "minTally", "miniQMC",
-          "miniMD", "hpccg", "XSBench", "CoHMM", "CoMD"]
+          "miniMD", "hpccg", "XSBench", "CoHMM", "CoMD", "XSBench_custom1", "simplemoc_custom1", "miniQMC_custom1", "Quicksilver_custom1", "miniMD_custom1", "CoMD_custom1"]
 
 JOB_MIXES = [
-    ["AMG", "XSBench", "minTally", "simplemoc", "hpccg", "CoHMM"],
-    ["miniMD", "miniQMC", "Quicksilver", "CoMD", "CoHMM", "AMG"],
-    ["simplemoc", "CoMD", "hpccg", "miniQMC", "XSBench", "minTally"],
-    ["AMG", "CoHMM", "miniMD", "Quicksilver", "CoMD", "hpccg"],
-    ["XSBench", "simplemoc", "CoMD", "Quicksilver", "CoHMM", "miniQMC"],
-    ["minTally", "hpccg", "miniMD", "XSBench", "AMG", "Quicksilver"],
+    ["AMG", "hpccg", "miniMD", "simplemoc", "XSBench_custom1", "CoHMM"], 
+    ["simplemoc_custom1", "Quicksilver", "AMG", "miniMD", "hpccg", "miniQMC"], 
+    ["CoMD_custom1", "XSBench", "hpccg", "AMG", "miniQMC", "simplemoc"], 
+    ["miniMD_custom1", "hpccg", "Quicksilver", "XSBench", "AMG", "CoHMM"], 
+    ["miniQMC_custom1", "simplemoc", "hpccg", "miniMD", "CoMD", "AMG"], 
+    ["Quicksilver_custom1", "XSBench", "simplemoc", "AMG", "CoMD", "hpccg"],
     ["AMG", "simplemoc", "Quicksilver", "minTally", "miniMD", "XSBench"],
     ["hpccg", "CoHMM", "CoMD", "AMG", "simplemoc", "miniQMC"],
     ["miniQMC", "hpccg", "minTally", "AMG", "XSBench", "miniMD"],
@@ -79,7 +79,7 @@ def rl_fifo_policy(env, obs):
     return act
 
 def rl_policy(env, obs):
-    action, _ = model.predict(obs, deterministic=True) # Reproducible
+    action, _ = model.predict(obs) # Add deterministic = True for Reproducible
     return action
 
 # === 5. Compute normalized throughputs ===
