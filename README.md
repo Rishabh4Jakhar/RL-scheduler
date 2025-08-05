@@ -2,6 +2,19 @@
 
 This system combines hardware performance profiling with reinforcement learning to optimize HPC job co-scheduling. It collects performance counters from various benchmarks (AMG, XSBench, miniQMC, miniMD, Quicksilver, etc.) and trains RL agent to make intelligent scheduling decisions that maximize system throughput.
 
+<br>
+
+The RL model achieves **approximately ~3x** throughput compared to traditional scheduling methods on custom HPC workload combinations.
+
+![Throughput Comparison](https://github.com/Rishabh4Jakhar/RL-profiler/blob/main/rl/throughput_comparison_12.png)
+**Throughput Comparision**
+<br>
+![Throughput Comparision Custom](https://github.com/Rishabh4Jakhar/RL-profiler/blob/main/rl/throughput_comparison_custom.png)
+**Custom input throughput comparision**
+*Performance comparison showing significant throughput improvements of the RL scheduler over baseline methods*
+
+### Key Capabilities
+
 The RL scheduler learns to:
 - **Co-schedule compatible jobs** for optimal resource utilization
 - **Allocate resources** (Core vs Thread mode) based on workload characteristics  
