@@ -7,10 +7,8 @@ This system combines hardware performance profiling with reinforcement learning 
 The RL model achieves **approximately ~3x** throughput compared to traditional scheduling methods on custom HPC workload combinations.
 
 ![Throughput Comparison](https://github.com/Rishabh4Jakhar/RL-profiler/blob/main/rl/throughput_comparison_12.png)
-**Throughput Comparision**
-<br>
-![Throughput Comparision Custom](https://github.com/Rishabh4Jakhar/RL-profiler/blob/main/rl/throughput_comparison_custom.png)
-**Custom input throughput comparision**
+<div align="center"><strong>Throughput Comparison</strong></div>
+<br><br>
 *Performance comparison showing significant throughput improvements of the RL scheduler over baseline methods*
 
 ### Key Capabilities
