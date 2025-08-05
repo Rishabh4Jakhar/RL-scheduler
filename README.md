@@ -1,6 +1,6 @@
-## PROFILER + REINFORCEMENT LEARNING SCHEDULER
+# REINFORCEMENT LEARNING SCHEDULER
 
-This system combines hardware performance profiling with reinforcement learning to optimize HPC job co-scheduling. It collects performance counters from various benchmarks (AMG, XSBench, miniQMC, miniMD, Quicksilver, etc.) and trains RL agent to make intelligent scheduling decisions that maximize system throughput.
+This system leverages reinforcement learning to optimize HPC job co-scheduling. By training an RL agent on diverse benchmark workloads (such as AMG, XSBench, miniQMC, miniMD, Quicksilver, etc.), it learns to make intelligent scheduling decisions that maximize overall system throughput.
 
 <br>
 
