@@ -2,15 +2,15 @@
 """
 Multi-Job Scheduling RL Training Script
 
-This script trains a PPO (Proximal Policy Optimization) agent to make optimal
+This script trains a RL agent to make optimal
 co-scheduling decisions for multiple HPC jobs. The training uses a curriculum
 learning approach with multiple random job mixes to ensure the agent learns
 robust scheduling policies across diverse workload combinations.
 
 Key Features:
 - Curriculum learning with random job mix sampling
-- PPO agent trained on multi-job co-scheduling environment
-- Progressive training across 15 different job combinations
+- RL agent trained on multi-job co-scheduling environment
+- Progressive training across 15 different job combinations (increase for more diversity)
 - Model persistence for deployment and evaluation
 
 Training Strategy:
@@ -41,16 +41,8 @@ DATA_DIR = "/home/rishabh2025/profiler/logs"
 # List of available HPC benchmarks for training
 # Each benchmark represents a different computational workload pattern
 BENCHMARKS = [
-    "AMG",         # Algebraic MultiGrid - Linear algebra/sparse matrices
-    "XSBench",     # Monte Carlo neutron transport simulation
-    "minTally",    # Simplified Monte Carlo particle transport
-    "simplemoc",   # Method of Characteristics transport solver
-    "hpccg",       # High Performance Conjugate Gradient solver
-    "CoHMM",       # Codesign Hydrodynamics Miniapp
-    "CoMD",        # Codesign Molecular Dynamics
-    "miniMD",      # Molecular dynamics simulation miniapp
-    "miniQMC",     # Quantum Monte Carlo simulation
-    "Quicksilver"  # Monte Carlo transport simulation
+    "AMG", "XSBench", "minTally", "simplemoc", "hpccg",
+    "CoHMM", "CoMD", "miniMD", "miniQMC", "Quicksilver"
 ]
 
 # Load all benchmark datasets into memory for efficient access during training
@@ -133,7 +125,7 @@ for mix_num in range(NUM_MIXES):
 
 # Save the trained model for deployment and evaluation
 model.save("ppo_rwi_scheduler")
-print("\n✅ Training completed and model saved as 'ppo_rwi_scheduler.zip'")
+print("\nTraining completed and model saved as 'ppo_rwi_scheduler.zip'")
 
 """
 Training Summary:
