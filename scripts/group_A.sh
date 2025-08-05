@@ -8,7 +8,7 @@ BENCH_ARGS="$@"
 
 mkdir -p /home/rishabh2025/profiler/logs/$BENCHMARK
 
-# ➤ Detect base benchmark name (strip _custom*)
+# Detect base benchmark name (strip _custom*)
 BASE_NAME=$(echo "$BENCHMARK" | sed -E 's/_custom[0-9]*//')
 
 # === Step 1: Find binary ===
