@@ -295,15 +295,10 @@ python train_multi.py
 
 #### For Custom Evaluation
 
-**Option 1: Direct specification in sim_custom.py**
+**Direct specification in sim_custom.py**
 ```bash
 python sim_custom.py 6 4
 # Enter: NewBenchmark --cmd /path/to/binary --arg1 value1 --arg2 value2
-```
-
-**Option 2: Pre-define in custom_commands.txt**
-```bash
-echo "NewBenchmark::/path/to/binary --arg1 value1 --arg2 value2" >> custom_commands.txt
 ```
 ---
 
