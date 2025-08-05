@@ -9,6 +9,7 @@ The RL model achieves **approximately ~3x** throughput compared to traditional s
 ![Throughput Comparison](https://github.com/Rishabh4Jakhar/RL-profiler/blob/main/rl/throughput_comparison_12.png)
 <div align="center"><strong>Throughput Comparison</strong></div>
 <br><br>
+
 *Performance comparison showing significant throughput improvements of the RL scheduler over baseline methods*
 
 ### Key Capabilities
